@@ -340,13 +340,13 @@ def show_info(args):
    xfin info             # Show this information
 
 📖 Documentation:
-   • GitHub: https://github.com/dhruvparmar10/XFIN
+   • GitHub: https://github.com/RishaBhangale/XFIN
    • Docs: https://xfin-xai.readthedocs.io
    • PyPI: https://pypi.org/project/xfin-xai
 
 📞 Support:
-   • Email: dhruv.jparmar0@gmail.com
-   • Issues: https://github.com/dhruvparmar10/XFIN/issues
+   • Email: rishabhbhangale@gmail.com
+   • Issues: https://github.com/RishaBhangale/XFIN/issues
 
 💡 Examples:
    # Launch dashboards
@@ -420,7 +420,7 @@ def main():
     parser = argparse.ArgumentParser(
         prog='xfin',
         description='XFIN - Comprehensive Financial Risk Analysis & XAI Library',
-        epilog='For more information, visit: https://github.com/dhruvparmar10/XFIN',
+        epilog='For more information, visit: https://github.com/RishaBhangale/XFIN',
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
     

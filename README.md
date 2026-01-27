@@ -379,9 +379,9 @@ You are free to:
 ## 📞 Contact & Support
 
 ### Get Help
-- 📧 **Email**: [dhruv.jparmar0@gmail.com](mailto:dhruv.jparmar0@gmail.com)
-- 🐛 **Issues**: [GitHub Issues](https://github.com/dhruvparmar10/XFIN/issues)
-- 💬 **Discussions**: [GitHub Discussions](https://github.com/dhruvparmar10/XFIN/discussions)
+- 📧 **Email**: [rishabhbhangale@gmail.com](mailto:rishabhbhangale@gmail.com)
+- 🐛 **Issues**: [GitHub Issues](https://github.com/RishaBhangale/XFIN/issues)
+- 💬 **Discussions**: [GitHub Discussions](https://github.com/RishaBhangale/XFIN/discussions)
 
 ### Stay Updated
 - ⭐ **Star** the repo to show support
@@ -424,9 +424,9 @@ You are free to:
 |----------|------|
 | 📦 **PyPI Package** | [xfin-xai](https://pypi.org/project/xfin-xai/) |
 | 📚 **Documentation** | [ReadTheDocs](https://xfin-xai.readthedocs.io/) |
-| 💻 **GitHub Repo** | [XFIN](https://github.com/dhruvparmar10/XFIN) |
-| 🐛 **Issue Tracker** | [GitHub Issues](https://github.com/dhruvparmar10/XFIN/issues) |
-| 💬 **Discussions** | [GitHub Discussions](https://github.com/dhruvparmar10/XFIN/discussions) |
+| 💻 **GitHub Repo** | [XFIN](https://github.com/RishaBhangale/XFIN) |
+| 🐛 **Issue Tracker** | [GitHub Issues](https://github.com/RishaBhangale/XFIN/issues) |
+| 💬 **Discussions** | [GitHub Discussions](https://github.com/RishaBhangale/XFIN/discussions) |
 
 ---
 
@@ -436,6 +436,6 @@ You are free to:
 
 *Built with ❤️ by [Dhruv Parmar](https://github.com/dhruvparmar10) & [Rishabh Bhangale](https://github.com/rishabhbhangale)*
 
-[⭐ Star on GitHub](https://github.com/dhruvparmar10/XFIN) • [📖 Read the Docs](https://xfin-xai.readthedocs.io/) • [🐛 Report Bug](https://github.com/dhruvparmar10/XFIN/issues)
+[⭐ Star on GitHub](https://github.com/RishaBhangale/XFIN) • [📖 Read the Docs](https://xfin-xai.readthedocs.io/) • [🐛 Report Bug](https://github.com/RishaBhangale/XFIN/issues)
 
 </div>

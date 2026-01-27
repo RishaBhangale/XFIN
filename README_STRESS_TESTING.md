@@ -61,7 +61,7 @@ xfin stress --host 0.0.0.0
 For development installation:
 
 ```bash
-git clone https://github.com/dhruvparmar10/XFIN.git
+git clone https://github.com/RishaBhangale/XFIN.git
 cd XFIN
 pip install -e .
 ```
@@ -491,8 +491,8 @@ This project is licensed under the **MIT License** - see the [LICENSE](../LICENS
 
 For questions or support:
 
-- **Email**: [dhruv.jparmar0@gmail.com](mailto:dhruv.jparmar0@gmail.com)
-- **Issues**: [GitHub Issues](https://github.com/dhruvparmar10/XFIN/issues)
+- **Email**: [rishabhbhangale@gmail.com](mailto:rishabhbhangale@gmail.com)
+- **Issues**: [GitHub Issues](https://github.com/RishaBhangale/XFIN/issues)
 
 ---
 

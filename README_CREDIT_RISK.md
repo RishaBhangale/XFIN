@@ -189,19 +189,19 @@ OPENROUTER_API_KEY = 'sk-or-v1-...'
 
 ## 🔗 External Links
 
-- **GitHub Repository**: https://github.com/dhruvparmar10/XFIN
+- **GitHub Repository**: https://github.com/RishaBhangale/XFIN
 - **PyPI Package**: https://pypi.org/project/xfin-xai/
 - **ReadTheDocs**: https://xfin-xai.readthedocs.io/
-- **Issue Tracker**: https://github.com/dhruvparmar10/XFIN/issues
+- **Issue Tracker**: https://github.com/RishaBhangale/XFIN/issues
 - **OpenRouter API**: https://openrouter.ai/keys
 
 ## 📞 Get Help
 
 1. **Check Documentation** (you're here! ✓)
-2. **Search GitHub Issues**: [Open Issues](https://github.com/dhruvparmar10/XFIN/issues)
-3. **Ask Question**: [New Discussion](https://github.com/dhruvparmar10/XFIN/discussions)
-4. **Report Bug**: [New Issue](https://github.com/dhruvparmar10/XFIN/issues/new)
-5. **Email**: dhruv.jparmar0@gmail.com
+2. **Search GitHub Issues**: [Open Issues](https://github.com/RishaBhangale/XFIN/issues)
+3. **Ask Question**: [New Discussion](https://github.com/RishaBhangale/XFIN/discussions)
+4. **Report Bug**: [New Issue](https://github.com/RishaBhangale/XFIN/issues/new)
+5. **Email**: rishabhbhangale@gmail.com
 
 ## 🎯 Quick Navigation
 
@@ -219,8 +219,8 @@ OPENROUTER_API_KEY = 'sk-or-v1-...'
 ---
 
 **Still can't find what you need?**  
-📧 Email: dhruv.jparmar0@gmail.com  
-🐛 Issues: https://github.com/dhruvparmar10/XFIN/issues
+📧 Email: rishabhbhangale@gmail.com
+🐛 Issues: https://github.com/RishaBhangale/XFIN/issues
 
 ---
 
