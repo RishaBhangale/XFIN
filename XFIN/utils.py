@@ -29,6 +29,10 @@ def get_llm_explanation(prediction, shap_top, lime_top, user_input, api_key=None
 
     # Use the provided api_key if given, else fallback to env var
     key = api_key if api_key is not None else _get_openrouter_key()
+    
+    # Check if API key is available
+    if not key or key.strip() == "":
+        return "❌ **API Key Required**: Please provide an OpenRouter API key to enable AI-powered explanations. Get a free key from [OpenRouter.ai](https://openrouter.ai/)."
 
     headers = {
         "Authorization": f"Bearer {key}",
@@ -55,8 +59,19 @@ def get_llm_explanation(prediction, shap_top, lime_top, user_input, api_key=None
         raw_content = response.json()['choices'][0]['message']['content']
         return raw_content
 
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 401:
+            return "❌ **Authentication Error**: Invalid API key. Please check your OpenRouter API key."
+        elif e.response.status_code == 429:
+            return "❌ **Rate Limit Exceeded**: Too many requests. Please wait a moment and try again."
+        else:
+            return f"❌ **HTTP Error {e.response.status_code}**: API request failed. Please try again."
+    except requests.exceptions.Timeout:
+        return "❌ **Timeout Error**: Request timed out after 20 seconds. Please try again."
+    except requests.exceptions.ConnectionError:
+        return "❌ **Connection Error**: Unable to connect to OpenRouter API. Please check your internet connection."
     except Exception as e:
-        return f"LLM explanation error: {e}"
+        return f"❌ **LLM Error**: {str(e)}"
 
 def _detect_stress_testing_context(prediction, user_input, shap_top, lime_top):
     """

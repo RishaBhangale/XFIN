@@ -6,19 +6,19 @@ Welcome to the XFIN library documentation! This index will help you quickly find
 
 ### Getting Started
 - **[Main README](README.md)** - Overview of all three modules
-- **[Quick Start Guide](../docs/QUICK_START.md)** - 5-minute introduction
+- **[Quick Start Guide](docs/QUICK_START.md)** - 5-minute introduction
 - **[Installation Guide](README.md#-installation)** - Setup instructions
 
 ### Module Documentation
-1. **[Credit Risk & XAI](../docs/README.md)** - Explainable credit decisions
+1. **[Credit Risk & XAI](docs/API_GUIDE.md)** - Explainable credit decisions
 2. **[Stress Testing](README_STRESS_TESTING.md)** - Portfolio risk analysis
 3. **[ESG Analysis](README_ESG.md)** - Sustainable investment scoring
 
 ### User Guides
-- **[Custom Portfolio Files](../examples/CUSTOM_FILES_GUIDE.md)** - Use your own data
-- **[Quick Start (3 steps)](../examples/QUICKSTART.md)** - Fastest way to begin
-- **[Visual Guide](../examples/VISUAL_GUIDE.md)** - Flowcharts and diagrams
-- **[API Reference](../docs/API_GUIDE.md)** - Complete API documentation
+- **[Custom Portfolio Files](examples/CUSTOM_FILES_GUIDE.md)** - Use your own data
+- **[Quick Start (3 steps)](examples/QUICKSTART.md)** - Fastest way to begin
+- **[Visual Guide](examples/README.md)** - Examples and guides
+- **[API Reference](docs/API_GUIDE.md)** - Complete API documentation
 
 ## 🎯 I Want To...
 
@@ -90,7 +90,7 @@ I want credit + stress + ESG together
 ## 🎓 Learning Path
 
 ### Beginner (Day 1)
-1. Read [QUICKSTART.md](../examples/QUICKSTART.md) (5 min)
+1. Read [QUICKSTART.md](examples/QUICKSTART.md) (5 min)
 2. Create portfolio CSV using template (10 min)
 3. Run `example_use_your_data.py` (5 min)
 4. Review output and understand metrics (10 min)
@@ -108,7 +108,7 @@ I want credit + stress + ESG together
 **Total: 2-3 hours to master each module**
 
 ### Advanced (Week 1+)
-1. Read [API_GUIDE.md](../docs/API_GUIDE.md)
+1. Read [API_GUIDE.md](docs/API_GUIDE.md)
 2. Build custom scenarios and models
 3. Integrate into your workflow
 4. Combine all three modules
@@ -155,9 +155,9 @@ OPENROUTER_API_KEY = 'sk-or-v1-...'
 ## 📊 Documentation by Feature
 
 ### Credit Risk Features
-- **XAI Explanations**: [docs/README.md#features](../docs/README.md#-features)
-- **Adverse Notices**: [docs/README.md#quick-start](../docs/README.md#-quick-start)
-- **Recommendations**: [docs/README.md#quick-start](../docs/README.md#-quick-start)
+- **XAI Explanations**: [API Guide](docs/API_GUIDE.md)
+- **Adverse Notices**: [API Guide](docs/API_GUIDE.md)
+- **Recommendations**: [API Guide](docs/API_GUIDE.md)
 
 ### Stress Testing Features
 - **Scenarios**: [README_STRESS_TESTING.md#scenarios](README_STRESS_TESTING.md#-pre-configured-scenarios)
@@ -173,7 +173,7 @@ OPENROUTER_API_KEY = 'sk-or-v1-...'
 
 ### File Issues
 **Problem**: "File not found"  
-**Solution**: See [CUSTOM_FILES_GUIDE.md](../examples/CUSTOM_FILES_GUIDE.md#troubleshooting)
+**Solution**: See [CUSTOM_FILES_GUIDE.md](examples/CUSTOM_FILES_GUIDE.md#troubleshooting)
 
 ### API Issues
 **Problem**: "Invalid API key"  
@@ -185,7 +185,7 @@ OPENROUTER_API_KEY = 'sk-or-v1-...'
 
 ### Data Issues
 **Problem**: "Missing columns"  
-**Solution**: Check [CSV format](../examples/QUICKSTART.md#-example-csv-format)
+**Solution**: Check [CSV format](examples/QUICKSTART.md)
 
 ## 🔗 External Links
 
@@ -208,13 +208,13 @@ OPENROUTER_API_KEY = 'sk-or-v1-...'
 | I need... | Go to... |
 |-----------|----------|
 | Overview of XFIN | [README.md](README.md) |
-| Credit Risk docs | [docs/README.md](../docs/README.md) |
+| Credit Risk docs | [API Guide](docs/API_GUIDE.md) |
 | Stress Testing docs | [README_STRESS_TESTING.md](README_STRESS_TESTING.md) |
 | ESG docs | [README_ESG.md](README_ESG.md) |
-| Getting started (fast) | [QUICKSTART.md](../examples/QUICKSTART.md) |
-| Custom portfolio guide | [CUSTOM_FILES_GUIDE.md](../examples/CUSTOM_FILES_GUIDE.md) |
-| Code examples | [examples/](../examples/) |
-| API reference | [API_GUIDE.md](../docs/API_GUIDE.md) |
+| Getting started (fast) | [QUICKSTART.md](examples/QUICKSTART.md) |
+| Custom portfolio guide | [CUSTOM_FILES_GUIDE.md](examples/CUSTOM_FILES_GUIDE.md) |
+| Code examples | [examples/](examples/) |
+| API reference | [API_GUIDE.md](docs/API_GUIDE.md) |
 
 ---
 

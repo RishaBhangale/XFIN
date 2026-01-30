@@ -240,13 +240,13 @@ print(f"""
   - Visualization: `matplotlib`, `plotly`, `streamlit`
   - XAI: `lime`, `shap`
 
-See [`requirements.txt`](../requirements.txt) for complete list.
+See [`requirements.txt`](requirements.txt) for complete list.
 
 ## 📖 Documentation
 
 ### Main Documentation
 - 📚 [Full API Reference](https://xfin-xai.readthedocs.io/en/latest/)
-- 🎓 [Tutorials & Examples](../examples/README.md)
+- 🎓 [Tutorials & Examples](examples/README.md)
 - 🗺️ [Roadmap](https://xfin-xai.readthedocs.io/en/latest/roadmap.html)
 
 ### Module-Specific Documentation
@@ -255,10 +255,10 @@ See [`requirements.txt`](../requirements.txt) for complete list.
 - 🌱 [ESG Module](README_ESG.md)
 
 ### Guides
-- 🚀 [Quick Start Guide](../docs/QUICK_START.md)
-- 🎯 [Custom Portfolio Files](../examples/CUSTOM_FILES_GUIDE.md)
-- 🔑 [API Key Setup](../examples/QUICKSTART.md)
-- 📊 [Example Gallery](../examples/)
+- 🚀 [Quick Start Guide](docs/QUICK_START.md)
+- 🎯 [Custom Portfolio Files](examples/CUSTOM_FILES_GUIDE.md)
+- 🔑 [API Key Setup](examples/QUICKSTART.md)
+- 📊 [Example Gallery](examples/)
 
 ## 💻 Programmatic Examples
 
@@ -277,7 +277,7 @@ OPENROUTER_API_KEY = 'sk-or-v1-...'        # Your API key (optional)
 - `example_complete_analysis_code.py` - All modules together
 - `example_basic_usage.py` - Simple introduction
 
-[📂 Browse All Examples →](../examples/)
+[📂 Browse All Examples →](examples/)
 
 ## 🏗️ Architecture
 

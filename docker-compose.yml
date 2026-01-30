@@ -1,0 +1,58 @@
+# XFIN Docker Compose Configuration
+# For local development and production deployment
+
+version: '3.8'
+
+services:
+  # Main Streamlit Application
+  xfin-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: xfin-stress-app
+    ports:
+      - "${APP_PORT:-8501}:8501"
+    environment:
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      - FINNHUB_API_KEY=${FINNHUB_API_KEY:-}
+      - PYTHONUNBUFFERED=1
+    volumes:
+      # Mount for development (optional - remove for production)
+      - ./XFIN:/app/XFIN:ro
+      # Persist any generated reports/data
+      - xfin-data:/app/data
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8501/_stcore/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    networks:
+      - xfin-network
+
+  # Optional: CLI service for batch processing
+  xfin-cli:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: xfin-cli
+    entrypoint: [ "python", "cli.py" ]
+    environment:
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      - FINNHUB_API_KEY=${FINNHUB_API_KEY:-}
+    volumes:
+      - ./input:/app/input:ro # Input files for batch processing
+      - ./output:/app/output # Output files
+    profiles:
+      - cli # Only start with: docker-compose --profile cli up xfin-cli
+    networks:
+      - xfin-network
+
+volumes:
+  xfin-data:
+    driver: local
+
+networks:
+  xfin-network:
+    driver: bridge

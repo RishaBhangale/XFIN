@@ -11,463 +11,41 @@ try:
     from XFIN.stress_plots import StressPlotGenerator
     from XFIN.esg import ESGScoringEngine
     from XFIN.esg_plots import ESGPlotGenerator
+    from XFIN.parsers import UniversalBrokerCSVParser
+    from XFIN.parsers.data_cleaning import clean_portfolio_data, get_value_column, get_stock_name_column
 except ImportError:
-    # Running from within XFIN directory
-    from stress_testing import StressTestingEngine
-    from stress_plots import StressPlotGenerator
-    from esg import ESGScoringEngine
-    from esg_plots import ESGPlotGenerator
+    # Running from within XFIN directory - add parent to path for proper package resolution
+    _current_dir = os.path.dirname(os.path.abspath(__file__))
+    _parent_dir = os.path.dirname(_current_dir)
+    if _parent_dir not in sys.path:
+        sys.path.insert(0, _parent_dir)
+    
+    # Now import using XFIN package prefix (this works because parent is in path)
+    from XFIN.stress_testing import StressTestingEngine
+    from XFIN.stress_plots import StressPlotGenerator
+    from XFIN.esg import ESGScoringEngine
+    from XFIN.esg_plots import ESGPlotGenerator
+    from XFIN.parsers import UniversalBrokerCSVParser
+    from XFIN.parsers.data_cleaning import clean_portfolio_data, get_value_column, get_stock_name_column
 
-class UniversalBrokerCSVParser:
-    """Universal parser that can handle CSV files from any broker with intelligent format detection"""
-    
-    def __init__(self):
-        # Comprehensive mapping of broker terminologies to standard names
-        self.column_mappings = {
-            # Stock/Security Name variations
-            'stock_name': [
-                'Stock Name', 'stock name', 'STOCK NAME', 'StockName',
-                'Security Name', 'security name', 'SECURITY NAME', 'SecurityName',
-                'Scrip/Contract', 'Scrip', 'Contract', 'Symbol', 'SYMBOL',
-                'Company Name', 'company name', 'COMPANY NAME', 'CompanyName',
-                'Name of Security', 'Security', 'Instrument', 'ISIN',
-                'Script Name', 'Name', 'NAME'
-            ],
-            
-            # Quantity variations
-            'quantity': [
-                'Quantity', 'quantity', 'QUANTITY', 'Qty', 'QTY', 'qty',
-                'Holdings', 'holdings', 'HOLDINGS', 'Units', 'UNITS',
-                'Shares', 'shares', 'SHARES', 'No. of Shares'
-            ],
-            
-            # Average/Buy Price variations
-            'avg_price': [
-                'Average buy price', 'Avg buy price', 'AVG BUY PRICE',
-                'Avg Trading Price', 'Average Price', 'Buy Price', 'Purchase Price',
-                'Avg Rate', 'Average Rate', 'Rate', 'Price', 'Unit Price',
-                'Cost Price', 'Acquisition Price', 'Buy Rate'
-            ],
-            
-            # Current/Market Price variations
-            'current_price': [
-                'Closing price', 'Closing Price', 'CLOSING PRICE', 'Close Price',
-                'Current Price', 'Market Price', 'LTP', 'Last Traded Price',
-                'Current Rate', 'Market Rate', 'Live Price', 'CMP'
-            ],
-            
-            # Current/Market Value variations
-            'current_value': [
-                'Closing value', 'Closing Value', 'CLOSING VALUE',
-                'Current Value', 'Market Value', 'Present Value',
-                'Market Value as of last trading day', 'Current Market Value',
-                'Total Value', 'Value', 'Holdings Value', 'Investment Value'
-            ],
-            
-            # Invested/Buy Value variations
-            'invested_value': [
-                'Buy value', 'Buy Value', 'BUY VALUE', 'Purchase Value',
-                'Invested Value', 'Investment Amount', 'Cost Value',
-                'Total Cost', 'Acquisition Value', 'Book Value'
-            ],
-            
-            # P&L variations
-            'pnl': [
-                'Unrealised P&L', 'P&L', 'PnL', 'Profit/Loss', 'Gain/Loss',
-                'Unrealized P&L', 'Total P&L', 'Net P&L', 'Day P&L'
-            ]
-        }
-        
-        # Broker format fingerprints for detection
-        self.broker_signatures = {
-            'Zerodha': ['ISIN', 'Exchange', 'Last traded price'],
-            'Upstox': ['Scrip/Contract', 'Market Value as of last trading day'],
-            'Angel Broking': ['Symbol', 'Exchange', 'Net Qty'],
-            'HDFC Securities': ['Security Name', 'Market Value', 'Unrealised P&L'],
-            'ICICI Direct': ['Stock Name', 'Holdings', 'Current Value'],
-            'Kotak Securities': ['Scrip Name', 'Quantity', 'Market Price'],
-            'Groww': ['Stock Name', 'Qty', 'Current Price'],
-            'Generic': []  # Fallback
-        }
-        
-        # Financial indicators for header detection
-        self.financial_indicators = [
-            'price', 'value', 'quantity', 'qty', 'amount', 'rate', 'cost',
-            'market', 'current', 'total', 'investment', 'holding', 'shares',
-            'units', 'stock', 'security', 'scrip', 'symbol', 'isin'
-        ]
-    
-    def detect_broker_format(self, headers):
-        """Detect broker format based on column signatures"""
-        header_text = ' '.join(headers).lower()
-        
-        for broker, signatures in self.broker_signatures.items():
-            if broker == 'Generic':
-                continue
-            
-            matches = sum(1 for sig in signatures if sig.lower() in header_text)
-            if matches >= len(signatures) * 0.6:  # 60% match threshold
-                return broker
-        
-        return 'Generic'
-    
-    def find_header_row(self, lines):
-        """Smart header detection using pattern-based approach"""
-        for i, line in enumerate(lines):
-            if not line.strip():  # Skip empty lines
-                continue
-                
-            # Skip obvious metadata rows
-            line_lower = line.lower()
-            if any(skip_term in line_lower for skip_term in 
-                   ['client', 'account', 'report', 'date', 'total portfolio', 'grand total']):
-                continue
-            
-            # Split and clean the line
-            cells = [cell.strip() for cell in line.split(',')]
-            if len(cells) < 3:  # Need at least 3 columns
-                continue
-            
-            # Count financial indicators in this row
-            financial_count = 0
-            for cell in cells:
-                cell_lower = cell.lower()
-                if any(indicator in cell_lower for indicator in self.financial_indicators):
-                    financial_count += 1
-            
-            # If this row has 3+ financial indicators, it's likely the header
-            if financial_count >= 3:
-                return i, self.detect_broker_format(cells)
-        
-        raise ValueError("Could not detect header row - no row found with sufficient financial indicators")
-    
-    def map_columns(self, headers):
-        """Map broker-specific column names to standard names"""
-        mapped = {}
-        
-        for standard_name, variations in self.column_mappings.items():
-            for header in headers:
-                if header in variations:
-                    mapped[standard_name] = header
-                    break
-        
-        return mapped
-    
-    def clean_numeric_value(self, value):
-        """Clean various number formats from different brokers"""
-        if pd.isna(value) or value == '':
-            return 0.0
-        
-        value_str = str(value)
-        
-        # Handle negative values in brackets: (1000) -> -1000
-        if value_str.startswith('(') and value_str.endswith(')'):
-            value_str = '-' + value_str[1:-1]
-        
-        # Remove currency symbols and commas
-        value_str = value_str.replace('₹', '').replace('$', '').replace(',', '')
-        
-        # Remove percentage signs if present
-        value_str = value_str.replace('%', '')
-        
-        # Extract just numbers, decimal points, and minus signs
-        import re
-        clean_value = re.sub(r'[^\d.-]', '', value_str)
-        
-        try:
-            return float(clean_value) if clean_value else 0.0
-        except (ValueError, TypeError):
-            return 0.0
-    
-    def extract_data_rows(self, lines, header_idx, headers):
-        """Extract valid data rows, skipping metadata and footer rows"""
-        data_rows = []
-        
-        for line in lines[header_idx + 1:]:
-            if not line.strip():  # Skip empty lines
-                continue
-            
-            # Skip summary/total rows
-            line_lower = line.lower()
-            if any(skip_term in line_lower for skip_term in 
-                   ['total', 'grand total', 'portfolio total', 'summary', 'net amount']):
-                continue
-            
-            row_data = [cell.strip() for cell in line.split(',')]
-            
-            # Ensure row has enough columns
-            if len(row_data) < len(headers):
-                row_data.extend([''] * (len(headers) - len(row_data)))
-            elif len(row_data) > len(headers):
-                row_data = row_data[:len(headers)]
-            
-            # Skip rows without a stock name (first financial column should have value)
-            if not row_data[0] or row_data[0].lower() in ['', 'na', 'n/a', 'null']:
-                continue
-            
-            data_rows.append(row_data)
-        
-        return data_rows
+# Alias for backward compatibility
+clean_and_handle_missing_data = clean_portfolio_data
 
-def clean_and_handle_missing_data(df, column_mapping):
+# UniversalBrokerCSVParser and helper functions are now imported from XFIN.parsers
+
+def clean_and_handle_missing_data_streamlit(df, column_mapping):
     """
-    Handle missing data in portfolio CSV files:
-    1. Remove rows where stock name itself is missing
-    2. Calculate missing buy/sell prices from quantity and P&L
-    3. Track and report all changes made
+    Streamlit wrapper for clean_portfolio_data.
+    Adds Streamlit info messages for user feedback.
     """
-    changes = {
-        "Removed Rows (Missing Stock Name)": [],
-        "Calculated Missing Buy Prices": [],
-        "Calculated Missing Sell Prices": [],
-        "Calculated Missing Current Values": [],
-        "Calculated Missing Invested Values": [],
-        "Rows Removed (Insufficient Data)": []
-    }
-    
     original_count = len(df)
-    
-    # Get column names from mapping
-    stock_col = column_mapping.get('stock_name')
-    qty_col = column_mapping.get('quantity')
-    avg_price_col = column_mapping.get('avg_price')
-    current_price_col = column_mapping.get('current_price')
-    current_value_col = column_mapping.get('current_value')
-    invested_value_col = column_mapping.get('invested_value')
-    pnl_col = column_mapping.get('pnl')
-    
-    # Find actual column names in DataFrame
-    stock_col_actual = None
-    for col in df.columns:
-        if stock_col and stock_col in str(col):
-            stock_col_actual = col
-            break
-    
-    if not stock_col_actual:
-        # Try to find any column that looks like a stock name
-        for col in df.columns:
-            if 'stock' in col.lower() or 'security' in col.lower() or 'name' in col.lower():
-                stock_col_actual = col
-                break
-    
-    # Step 1: Remove rows with missing stock names
-    if stock_col_actual and stock_col_actual in df.columns:
-        rows_to_remove = df[stock_col_actual].isna() | (df[stock_col_actual] == '') | (df[stock_col_actual].astype(str).str.strip() == '')
-        removed_indices = df[rows_to_remove].index.tolist()
-        
-        if len(removed_indices) > 0:
-            df = df[~rows_to_remove].copy()
-            changes["Removed Rows (Missing Stock Name)"].append(
-                f"Removed {len(removed_indices)} rows with missing stock names"
-            )
-    
-    # Step 2: Calculate missing prices from quantity and P&L
-    # Find P&L column in actual DataFrame
-    pnl_col_actual = None
-    for col in df.columns:
-        if any(term in col.lower() for term in ['p&l', 'pnl', 'profit', 'loss', 'gain']):
-            pnl_col_actual = col
-            break
-    
-    qty_col_actual = None
-    for col in df.columns:
-        if any(term in col.lower() for term in ['quantity', 'qty', 'units', 'shares', 'holdings']):
-            qty_col_actual = col
-            break
-    
-    # Find current/market value column (flexible matching)
-    current_value_col_actual = None
-    for col in df.columns:
-        if any(term in col.lower() for term in ['current value', 'market value', 'closing value', 'present value']):
-            current_value_col_actual = col
-            break
-    
-    # Find invested/buy value column (flexible matching)
-    invested_value_col_actual = None
-    for col in df.columns:
-        if any(term in col.lower() for term in ['invested value', 'buy value', 'cost value', 'investment value', 'purchase value']):
-            invested_value_col_actual = col
-            break
-    
-    # Find previous closing price column (for port1 scenario)
-    prev_closing_price_col = None
-    for col in df.columns:
-        if any(term in col.lower() for term in ['previous closing', 'prev closing', 'last closing', 'previous close']):
-            prev_closing_price_col = col
-            break
-    
-    # Find current/closing price column
-    current_price_col_actual = None
-    for col in df.columns:
-        if any(term in col.lower() for term in ['closing price', 'current price', 'market price', 'ltp', 'last traded']):
-            current_price_col_actual = col
-            break
-    
-    # Find buy/average price column
-    avg_price_col_actual = None
-    for col in df.columns:
-        if any(term in col.lower() for term in ['average buy', 'avg buy', 'buy price', 'purchase price', 'avg price']):
-            avg_price_col_actual = col
-            break
-    
-    # Calculate missing values row by row
-    for idx in df.index:
-        row = df.loc[idx]
-        stock_name = row.get(stock_col_actual, 'Unknown') if stock_col_actual else 'Unknown'
-        
-        # Get values (convert to numeric, handle NaN)
-        qty = pd.to_numeric(row.get(qty_col_actual, 0), errors='coerce') if qty_col_actual else 0
-        pnl = pd.to_numeric(row.get(pnl_col_actual, 0), errors='coerce') if pnl_col_actual else 0
-        current_val = pd.to_numeric(row.get(current_value_col_actual, None), errors='coerce') if current_value_col_actual else None
-        invested_val = pd.to_numeric(row.get(invested_value_col_actual, None), errors='coerce') if invested_value_col_actual else None
-        
-        # Get previous closing price if available
-        prev_closing_price = pd.to_numeric(row.get(prev_closing_price_col, None), errors='coerce') if prev_closing_price_col else None
-        
-        # Skip if quantity is 0 or NaN
-        if pd.isna(qty) or qty == 0:
-            continue
-        
-        # SPECIAL CASE: If no current price but have previous closing price, use it as current price
-        if prev_closing_price_col and not pd.isna(prev_closing_price) and prev_closing_price > 0:
-            # Check if current price is missing
-            current_price_value = None
-            if current_price_col_actual:
-                current_price_value = pd.to_numeric(row.get(current_price_col_actual, None), errors='coerce')
-            
-            # If current price is missing, use previous closing price
-            if pd.isna(current_price_value):
-                if current_price_col_actual:
-                    df.at[idx, current_price_col_actual] = prev_closing_price
-                else:
-                    # Create new column if it doesn't exist
-                    if 'Current Price' not in df.columns:
-                        df['Current Price'] = None
-                    df.at[idx, 'Current Price'] = prev_closing_price
-                    current_price_col_actual = 'Current Price'
-                
-                changes["Calculated Missing Sell Prices"].append(
-                    f"{stock_name}: Used Previous Closing Price = ₹{prev_closing_price:,.2f} as Current Price"
-                )
-                
-                # Calculate current value from previous closing price
-                if pd.isna(current_val):
-                    calculated_current_val = prev_closing_price * qty
-                    if current_value_col_actual:
-                        df.at[idx, current_value_col_actual] = calculated_current_val
-                    else:
-                        if 'Current Value' not in df.columns:
-                            df['Current Value'] = None
-                        df.at[idx, 'Current Value'] = calculated_current_val
-                        current_value_col_actual = 'Current Value'
-                    
-                    changes["Calculated Missing Current Values"].append(
-                        f"{stock_name}: Calculated Current Value = ₹{calculated_current_val:,.2f} (Previous Closing Price × Quantity)"
-                    )
-                    current_val = calculated_current_val
-                    
-                    # Now calculate P&L if we have buy price or invested value
-                    if not pd.isna(invested_val) and invested_val > 0:
-                        calculated_pnl = calculated_current_val - invested_val
-                        if pnl_col_actual:
-                            df.at[idx, pnl_col_actual] = calculated_pnl
-                        else:
-                            if 'P&L' not in df.columns:
-                                df['P&L'] = None
-                            df.at[idx, 'P&L'] = calculated_pnl
-                            pnl_col_actual = 'P&L'
-                        
-                        changes["Calculated Missing Invested Values"].append(
-                            f"{stock_name}: Calculated P&L = ₹{calculated_pnl:,.2f} (Current Value - Invested Value)"
-                        )
-                        pnl = calculated_pnl
-        
-        # Calculate missing invested value from current value and P&L
-        if pd.isna(invested_val) and not pd.isna(current_val) and not pd.isna(pnl):
-            calculated_invested = current_val - pnl
-            if calculated_invested > 0:
-                df.at[idx, invested_value_col_actual or 'Invested Value'] = calculated_invested
-                changes["Calculated Missing Invested Values"].append(
-                    f"{stock_name}: Calculated Invested Value = ₹{calculated_invested:,.2f} (from Current Value - P&L)"
-                )
-                invested_val = calculated_invested
-        
-        # Calculate missing current value from invested value and P&L
-        if pd.isna(current_val) and not pd.isna(invested_val) and not pd.isna(pnl):
-            calculated_current = invested_val + pnl
-            if calculated_current > 0:
-                df.at[idx, current_value_col_actual or 'Current Value'] = calculated_current
-                changes["Calculated Missing Current Values"].append(
-                    f"{stock_name}: Calculated Current Value = ₹{calculated_current:,.2f} (from Invested Value + P&L)"
-                )
-                current_val = calculated_current
-        
-        # Calculate buy price if missing but we have invested value and quantity
-        if invested_value_col_actual and not pd.isna(invested_val) and invested_val > 0:
-            buy_price = invested_val / qty
-            # Check if buy price column exists and is NaN
-            for col in df.columns:
-                if any(term in col.lower() for term in ['average buy', 'avg buy', 'buy price', 'purchase price']):
-                    if pd.isna(row.get(col, None)):
-                        df.at[idx, col] = buy_price
-                        changes["Calculated Missing Buy Prices"].append(
-                            f"{stock_name}: Buy Price = ₹{buy_price:,.2f} (Invested Value ÷ Quantity)"
-                        )
-                    break
-        
-        # Calculate sell/current price if missing but we have current value and quantity
-        if current_value_col_actual and not pd.isna(current_val) and current_val > 0:
-            current_price = current_val / qty
-            # Check if current price column exists and is NaN
-            for col in df.columns:
-                if any(term in col.lower() for term in ['closing price', 'current price', 'market price', 'ltp']):
-                    if pd.isna(row.get(col, None)):
-                        df.at[idx, col] = current_price
-                        changes["Calculated Missing Sell Prices"].append(
-                            f"{stock_name}: Current Price = ₹{current_price:,.2f} (Current Value ÷ Quantity)"
-                        )
-                    break
-    
-    # Step 3: Final check - remove rows that still don't have essential data
-    essential_cols = [current_value_col_actual, invested_value_col_actual]
-    rows_to_remove_final = []
-    
-    for idx in df.index:
-        # Must have at least one value column
-        has_value = False
-        for col in essential_cols:
-            if col and col in df.columns:
-                val = pd.to_numeric(df.at[idx, col], errors='coerce')
-                if not pd.isna(val) and val > 0:
-                    has_value = True
-                    break
-        
-        if not has_value:
-            rows_to_remove_final.append(idx)
-    
-    if rows_to_remove_final:
-        stock_names_removed = []
-        for idx in rows_to_remove_final:
-            stock = df.at[idx, stock_col_actual] if stock_col_actual else f"Row {idx}"
-            stock_names_removed.append(str(stock))
-        
-        df = df.drop(rows_to_remove_final)
-        changes["Rows Removed (Insufficient Data)"].append(
-            f"Removed {len(rows_to_remove_final)} rows lacking essential value data: {', '.join(stock_names_removed[:5])}" +
-            (f" and {len(stock_names_removed) - 5} more" if len(stock_names_removed) > 5 else "")
-        )
-    
-    # Reset index
-    df = df.reset_index(drop=True)
+    df, changes = clean_portfolio_data(df, column_mapping, show_info=False)
     
     final_count = len(df)
     total_removed = original_count - final_count
     
     if total_removed > 0:
         st.info(f"ℹ️ Processed {original_count} rows → Kept {final_count} valid rows (removed {total_removed})")
-    
-    # Remove empty change categories
-    changes = {k: v for k, v in changes.items() if v}
     
     return df, changes
 
@@ -487,16 +65,23 @@ def parse_broker_csv(file_content):
             st.error("File appears to be empty or has insufficient data")
             return None
         
-        # Smart header detection
-        header_idx, broker_format = parser.find_header_row(lines)
+        # Extract only Unrealised P&L section if present (skip sold stocks)
+        filtered_lines = parser.extract_unrealised_section(lines)
+        
+        # Check if section filtering was applied
+        if len(filtered_lines) < len(lines):
+            st.info(f"📊 Filtered to Unrealised P&L section ({len(filtered_lines)} rows from {len(lines)} total)")
+        
+        # Smart header detection on filtered lines
+        header_idx, broker_format = parser.find_header_row(filtered_lines)
         
         # Extract headers and map to standard names
-        header_line = lines[header_idx]
+        header_line = filtered_lines[header_idx]
         raw_headers = [col.strip() for col in header_line.split(',')]
         column_mapping = parser.map_columns(raw_headers)
         
-        # Extract data rows
-        data_rows = parser.extract_data_rows(lines, header_idx, raw_headers)
+        # Extract data rows from filtered lines only
+        data_rows = parser.extract_data_rows(filtered_lines, header_idx, raw_headers)
         
         if not data_rows:
             st.error("No valid data rows found after header")
@@ -549,83 +134,7 @@ def parse_broker_csv(file_content):
         st.info("💡 **Tip**: Make sure your CSV has columns for stock names, quantities, and prices/values")
         return None
 
-def get_value_column(df):
-    """Find the appropriate value column from the dataframe - Universal approach for multiple brokers"""
-    if df.empty:
-        return None
-        
-    # Priority order: Current/Market Value > Invested Value > Buy Value > others
-    possible_columns = [
-        # Format 1: Your current CSV format
-        'Invested Value',  # Our calculated column gets priority
-        'Current Value',   # Another calculated column
-        'Closing value', 'Closing Value', 'closing value', 'CLOSING VALUE',
-        'Buy value', 'Buy Value', 'buy value', 'BUY VALUE',
-        # Format 2: Advanced broker format  
-        'Market Value as of last trading day', 'Overall Gain/Loss',
-        # Format 3: Trading format
-        'Sell Value',
-        # Common variations
-        'Market Value', 'Market value', 'market value', 'MARKET VALUE',
-        'Investment Value', 'Cur. val', 'Investment', 'Holdings Value', 
-        'Total Value', 'Present Value', 'Value', 'value', 'VALUE',
-        'Amount', 'Current Market Value'
-    ]
-    
-    for col in possible_columns:
-        if col in df.columns and not df[col].isna().all():
-            # Check if it's actually numeric
-            try:
-                pd.to_numeric(df[col], errors='coerce')
-                return col
-            except:
-                continue
-    
-    # If no perfect match, look for any numeric column with value-related keywords
-    for col in df.columns:
-        col_lower = col.lower()
-        if (('val' in col_lower or 'investment' in col_lower or 'amount' in col_lower or 'price' in col_lower) 
-            and pd.api.types.is_numeric_dtype(df[col]) and not df[col].isna().all()):
-            return col
-            
-    return None
-
-def get_stock_name_column(df):
-    """Find the appropriate stock name column - Universal approach for multiple brokers"""
-    if df.empty:
-        return None
-        
-    # Priority order based on multiple broker formats
-    possible_columns = [
-        # Format 1: Your current CSV format
-        'Stock Name', 'stock name', 'Stock name', 'STOCK NAME',
-        # Format 2: Advanced broker format
-        'Scrip/Contract', 'Company Name', 'Scrip', 'Contract',
-        # Format 3: Trading format  
-        'Symbol', 'symbol', 'SYMBOL',
-        # Common variations
-        'Security Name', 'security name', 'Security name', 'SECURITY NAME',
-        'Name', 'name', 'NAME', 'ISIN',
-        'Name of Security', 'Script Name', 'CompanyName', 'StockName', 
-        'SecurityName', 'Instrument', 'Ticker'
-    ]
-    
-    for col in possible_columns:
-        if col in df.columns and not df[col].isna().all():
-            # Verify it contains actual stock names, not just numbers or empty values
-            sample_values = df[col].dropna().head(5).astype(str)
-            if any(len(val) > 1 and not val.replace('.', '').isdigit() for val in sample_values):
-                return col
-    
-    # If no perfect match, use the first non-numeric column that looks like names
-    for col in df.columns:
-        if not pd.api.types.is_numeric_dtype(df[col]) and not df[col].isna().all():
-            # Check if it contains stock-like names (not dates or other metadata)
-            sample_values = df[col].dropna().head(3).astype(str)
-            if any(len(val) > 2 and not val.isdigit() and 'date' not in val.lower() for val in sample_values):
-                return col
-            
-    return None
+# get_value_column and get_stock_name_column are now imported from XFIN.parsers.data_cleaning
 
 def calculate_enhanced_value(row, df, col_map, date_price_columns):
     """

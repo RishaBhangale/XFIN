@@ -162,6 +162,8 @@ statement.csv
 XFIN/models/esg_india.csv
 
 # --- Example Data ---
-# Ignores all example files EXCEPT the template
-examples/*
-!examples/example_portfolio.csv
+# Track example Python scripts but ignore user portfolio data
+examples/*.csv
+examples/*.xlsx
+examples/*.json
+!examples/example_portfolio.csv.env
