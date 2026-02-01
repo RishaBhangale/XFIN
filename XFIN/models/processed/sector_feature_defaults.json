@@ -6,7 +6,8 @@
     "environment_score": 50.0,
     "social_score": 50.0,
     "governance_score": 50.0,
-    "total_esg": 50.0
+    "total_esg": 50.0,
+    "marketCap_log": 23.61251226862269
   },
   "Communication Services": {
     "marketCap": 8843307520.0,
@@ -15,7 +16,8 @@
     "environment_score": 50.0,
     "social_score": 50.0,
     "governance_score": 50.0,
-    "total_esg": 50.0
+    "total_esg": 50.0,
+    "marketCap_log": 22.902926797577102
   },
   "Consumer Cyclical": {
     "marketCap": 14522925056.0,
@@ -24,7 +26,8 @@
     "environment_score": 50.0,
     "social_score": 50.0,
     "governance_score": 50.0,
-    "total_esg": 50.0
+    "total_esg": 50.0,
+    "marketCap_log": 23.398994276261305
   },
   "Consumer Defensive": {
     "marketCap": 9874805760.0,
@@ -33,7 +36,8 @@
     "environment_score": 50.0,
     "social_score": 50.0,
     "governance_score": 50.0,
-    "total_esg": 50.0
+    "total_esg": 50.0,
+    "marketCap_log": 23.013252477767992
   },
   "Energy": {
     "marketCap": 29762942976.0,
@@ -42,7 +46,8 @@
     "environment_score": 50.0,
     "social_score": 50.0,
     "governance_score": 50.0,
-    "total_esg": 50.0
+    "total_esg": 50.0,
+    "marketCap_log": 24.116529932378157
   },
   "Financial Services": {
     "marketCap": 47032182784.0,
@@ -51,7 +56,8 @@
     "environment_score": 50.0,
     "social_score": 55.0,
     "governance_score": 60.0,
-    "total_esg": 55.0
+    "total_esg": 55.0,
+    "marketCap_log": 24.57409794443531
   },
   "Healthcare": {
     "marketCap": 47977164800.0,
@@ -60,7 +66,8 @@
     "environment_score": 50.0,
     "social_score": 50.0,
     "governance_score": 50.0,
-    "total_esg": 50.0
+    "total_esg": 50.0,
+    "marketCap_log": 24.593991001344808
   },
   "Industrials": {
     "marketCap": 21599358976.0,
@@ -69,7 +76,8 @@
     "environment_score": 50.0,
     "social_score": 50.0,
     "governance_score": 50.0,
-    "total_esg": 50.0
+    "total_esg": 50.0,
+    "marketCap_log": 23.79592947420542
   },
   "Real Estate": {
     "marketCap": 14448056320.0,
@@ -78,7 +86,8 @@
     "environment_score": 45.0,
     "social_score": 50.0,
     "governance_score": 55.0,
-    "total_esg": 50.0
+    "total_esg": 50.0,
+    "marketCap_log": 23.393825731800042
   },
   "Technology": {
     "marketCap": 20617959424.0,
@@ -87,7 +96,8 @@
     "environment_score": 50.0,
     "social_score": 50.0,
     "governance_score": 50.0,
-    "total_esg": 50.0
+    "total_esg": 50.0,
+    "marketCap_log": 23.749428349678034
   },
   "Utilities": {
     "marketCap": 170665000960.0,
@@ -96,7 +106,8 @@
     "environment_score": 60.0,
     "social_score": 60.0,
     "governance_score": 60.0,
-    "total_esg": 60.0
+    "total_esg": 60.0,
+    "marketCap_log": 25.86296841327604
   },
   "Other": {
     "marketCap": 20806628352.0,
@@ -105,6 +116,7 @@
     "environment_score": 50.0,
     "social_score": 50.0,
     "governance_score": 50.0,
-    "total_esg": 50.0
+    "total_esg": 50.0,
+    "marketCap_log": 23.75853744370623
   }
 }

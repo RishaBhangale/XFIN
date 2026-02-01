@@ -183,44 +183,108 @@ class UniversalBrokerCSVParser:
         
         raise ValueError("Could not detect header row - no row found with sufficient financial indicators")
     
-    def extract_unrealised_section(self, lines: List[str]) -> List[str]:
+    def extract_unrealised_section(self, lines: List[str], prefer_holdings: bool = True) -> List[str]:
         """
-        Extract only the Unrealised P&L section from a P&L report.
-        Returns filtered lines containing only unrealised (unsold) positions.
+        Extract the Unrealised P&L / Holdings section from a P&L report.
+        
+        Handles formats where:
+        - Unrealised section is at the end (after Realised)
+        - Unrealised section is at the beginning
+        - Only one section exists
+        
+        Parameters
+        ----------
+        lines : List[str]
+            All lines from the CSV file
+        prefer_holdings : bool
+            If True, prefer current holdings (unrealised) over closed trades (realised)
+            
+        Returns
+        -------
+        List[str]
+            Filtered lines containing only the relevant section, or all lines if no sections found
         """
-        unrealised_start = None
-        unrealised_end = None
+        sections = []
+        current_section = None
+        section_start = None
         
         for i, line in enumerate(lines):
             line_lower = line.lower().strip()
             
-            # Look for Unrealised section start
-            if unrealised_start is None:
-                if any(marker in line_lower for marker in self.section_markers['unrealised']):
-                    if 'p&l' in line_lower or 'profit' in line_lower or 'holdings' in line_lower:
-                        unrealised_start = i
-                        continue
+            # Skip empty lines for section detection
+            if not line_lower:
+                continue
             
-            # Look for Realised section start (which ends Unrealised section)
-            if unrealised_start is not None and unrealised_end is None:
-                if any(marker in line_lower for marker in self.section_markers['realised']):
-                    if 'p&l' in line_lower or 'profit' in line_lower or 'closed' in line_lower:
-                        unrealised_end = i
-                        break
-                # Also stop at summary/total rows
-                if 'total unrealised' in line_lower or 'sub total' in line_lower:
-                    unrealised_end = i
-                    break
+            # Count commas - section headers usually have few columns
+            comma_count = line_lower.count(',')
+            
+            # Check if this looks like a section header (standalone row, not data row)
+            # Section headers usually have many empty columns (commas) or few columns total
+            is_likely_section_header = comma_count >= 3 and line_lower.replace(',', '').strip() == line_lower.replace(',', '').split(',')[0].strip()
+            
+            # If this line has meaningful data in multiple columns, skip it as section header
+            cells = [c.strip() for c in line_lower.split(',')]
+            non_empty_cells = [c for c in cells if c]
+            if len(non_empty_cells) > 3:
+                # This is likely a data row, not a section header
+                continue
+            
+            # Detect section headers - be more specific
+            # "Unrealised trades" or "Unrealised (Holdings as on ...)" are section headers
+            # "Unrealised P&L" alone (in summary) is NOT a section header
+            is_unrealised_header = (
+                ('unrealised' in line_lower or 'unrealized' in line_lower) and
+                ('trades' in line_lower or 'holdings' in line_lower or 'as on' in line_lower)
+            )
+            
+            is_realised_header = (
+                ('realised' in line_lower or 'realized' in line_lower) and
+                ('trades' in line_lower)
+            ) and not is_unrealised_header
+            
+            # Close previous section and start new one
+            if is_unrealised_header or is_realised_header:
+                if current_section is not None and section_start is not None:
+                    sections.append({
+                        'type': current_section,
+                        'start': section_start,
+                        'end': i
+                    })
+                
+                current_section = 'unrealised' if is_unrealised_header else 'realised'
+                section_start = i
         
-        # If we found an unrealised section, extract it
-        if unrealised_start is not None:
-            if unrealised_end is not None:
-                return lines[unrealised_start:unrealised_end]
-            else:
-                return lines[unrealised_start:]
+        # Close the last section
+        if current_section is not None and section_start is not None:
+            sections.append({
+                'type': current_section,
+                'start': section_start,
+                'end': len(lines)
+            })
         
-        # No section markers found - return all lines (backwards compatible)
-        return lines
+        # If no sections found, return all lines
+        if not sections:
+            return lines
+        
+        # Find the preferred section (prefer the LAST unrealised section - it's usually the holdings)
+        preferred_section = None
+        for section in reversed(sections):
+            if section['type'] == 'unrealised':
+                preferred_section = section
+                break
+        
+        # Fall back to last section if no unrealised found
+        if preferred_section is None:
+            preferred_section = sections[-1] if prefer_holdings else sections[0]
+        
+        # Extract the section lines
+        extracted = lines[preferred_section['start']:preferred_section['end']]
+        
+        # Remove the section header line itself if it's not the data header
+        if extracted and ',' in extracted[0] and extracted[0].lower().count(',') < 3:
+            extracted = extracted[1:]  # Skip the section title line
+        
+        return extracted if extracted else lines
     
     def map_columns(self, headers: List[str]) -> Dict[str, str]:
         """Map broker-specific column names to standard names"""
@@ -311,12 +375,23 @@ class UniversalBrokerCSVParser:
             else:
                 content = str(file_content)
             
+            # Remove BOM if present
+            if content.startswith('\ufeff'):
+                content = content[1:]
+            
+            # Normalize line endings (handle Windows CRLF)
+            content = content.replace('\r\n', '\n').replace('\r', '\n')
+            
             lines = content.strip().split('\n')
             if len(lines) < 2:
                 return None
             
-            # Extract only Unrealised P&L section if present
+            # Try to extract Unrealised P&L section if present
             filtered_lines = self.extract_unrealised_section(lines)
+            
+            # If section filtering resulted in too few lines, use all lines
+            if len(filtered_lines) < 3:
+                filtered_lines = lines
             
             # Smart header detection
             header_idx, broker_format = self.find_header_row(filtered_lines)
@@ -328,6 +403,14 @@ class UniversalBrokerCSVParser:
             
             # Extract data rows
             data_rows = self.extract_data_rows(filtered_lines, header_idx, raw_headers)
+            
+            # If no data rows found, try without section filtering
+            if not data_rows and filtered_lines != lines:
+                header_idx, broker_format = self.find_header_row(lines)
+                header_line = lines[header_idx]
+                raw_headers = [col.strip() for col in header_line.split(',')]
+                column_mapping = self.map_columns(raw_headers)
+                data_rows = self.extract_data_rows(lines, header_idx, raw_headers)
             
             if not data_rows:
                 return None
@@ -350,3 +433,4 @@ class UniversalBrokerCSVParser:
             
         except Exception as e:
             return None
+

@@ -12,7 +12,10 @@ try:
     from XFIN.esg import ESGScoringEngine
     from XFIN.esg_plots import ESGPlotGenerator
     from XFIN.parsers import UniversalBrokerCSVParser
-    from XFIN.parsers.data_cleaning import clean_portfolio_data, get_value_column, get_stock_name_column
+    from XFIN.parsers.data_cleaning import (
+        clean_portfolio_data, get_value_column, get_stock_name_column,
+        normalize_portfolio_tickers
+    )
 except ImportError:
     # Running from within XFIN directory - add parent to path for proper package resolution
     _current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -26,7 +29,10 @@ except ImportError:
     from XFIN.esg import ESGScoringEngine
     from XFIN.esg_plots import ESGPlotGenerator
     from XFIN.parsers import UniversalBrokerCSVParser
-    from XFIN.parsers.data_cleaning import clean_portfolio_data, get_value_column, get_stock_name_column
+    from XFIN.parsers.data_cleaning import (
+        clean_portfolio_data, get_value_column, get_stock_name_column,
+        normalize_portfolio_tickers
+    )
 
 # Alias for backward compatibility
 clean_and_handle_missing_data = clean_portfolio_data
@@ -305,7 +311,9 @@ def create_stress_dashboard():
             portfolio_data = parse_broker_csv(file_content)
             
             if portfolio_data is not None:
-                st.sidebar.success("✅ Portfolio loaded!")
+                # Auto-normalize tickers for yfinance/ESG compatibility
+                portfolio_data = normalize_portfolio_tickers(portfolio_data)
+                st.sidebar.success("✅ Portfolio loaded & tickers normalized!")
                 
                 # Debug: Show column names
                 st.sidebar.write("**Columns detected:**")

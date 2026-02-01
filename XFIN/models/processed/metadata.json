@@ -8,6 +8,7 @@
     "environment_score",
     "social_score",
     "governance_score",
+    "marketCap_log",
     "sector"
   ],
   "numeric_cols": [
@@ -49,7 +50,7 @@
   ],
   "label_col": "total_esg",
   "drop_imputed": false,
-  "imputed_weight": 0.4,
+  "imputed_weight": 0.5,
   "n_total_loaded": 2187,
   "n_after_filter": 2187
 }

@@ -375,15 +375,20 @@ class RobustMLPredictor:
         # Runtime safeguard #3: Check feature variance (near-zero variance = unreliable)
         numeric_features = [c for c in raw_cols if c != 'sector' and c in df.columns]
         if len(numeric_features) > 0:
-            feature_values = df[numeric_features].iloc[0].values
-            # Check if all features are very similar (low variance)
-            if len(feature_values) > 1:
-                variance = np.var(feature_values[~np.isnan(feature_values)])
-                if variance < 1e-6:
-                    if self.verbose:
-                        print(f"   ⚠️ SAFEGUARD: Near-zero feature variance ({variance:.2e})")
-                        print(f"   → Features may be too uniform for reliable prediction")
-                    # Log warning but continue
+            try:
+                # Convert to float array, handling mixed types
+                feature_values = pd.to_numeric(df[numeric_features].iloc[0], errors='coerce').values.astype(float)
+                # Check if all features are very similar (low variance)
+                if len(feature_values) > 1:
+                    valid_values = feature_values[~np.isnan(feature_values)]
+                    if len(valid_values) > 1:
+                        variance = np.var(valid_values)
+                        if variance < 1e-6:
+                            if self.verbose:
+                                print(f"   ⚠️ SAFEGUARD: Near-zero feature variance ({variance:.2e})")
+                                print(f"   → Features may be too uniform for reliable prediction")
+            except Exception:
+                pass  # Skip variance check if conversion fails
         
         # Transform using preprocessor
         try:

@@ -89,6 +89,11 @@ class ESGScoringEngine:
                 print(f"⚠️ ML predictor initialization failed: {e}")
                 self.ml_predictor = None
         
+        # Load company-specific ESG data (BRSR reports)
+        self.company_esg_data = self._load_company_esg_data()
+        if self.company_esg_data:
+            print(f"✅ Loaded ESG data for {len(self.company_esg_data) - 1} companies (BRSR/CDP/MSCI)")
+        
         # Load sector proxy database
         self.sector_proxy_df = self._load_sector_proxy_data()
         
@@ -119,6 +124,44 @@ class ESGScoringEngine:
         
         # Industry-specific ESG risk factors
         self.industry_risk_mapping = self._initialize_industry_mapping()
+    
+    def _load_company_esg_data(self) -> Dict:
+        """Load company-specific ESG data from JSON file (BRSR/CDP/MSCI sources)"""
+        import json
+        data_path = Path(__file__).parent / 'data' / 'company_esg_data.json'
+        if data_path.exists():
+            try:
+                with open(data_path, 'r') as f:
+                    return json.load(f)
+            except Exception as e:
+                print(f"⚠️ Failed to load company ESG data: {e}")
+        return {}
+    
+    def get_company_esg(self, ticker: str) -> Optional[Dict]:
+        """
+        Look up company-specific ESG data by ticker.
+        
+        Returns ESG data if found, None otherwise.
+        This is Tier 1.5 in the fallback chain (after API, before ML/Proxy).
+        """
+        if not self.company_esg_data or not ticker:
+            return None
+        
+        # Normalize ticker to uppercase  
+        ticker_upper = ticker.upper()
+        
+        if ticker_upper in self.company_esg_data:
+            company_data = self.company_esg_data[ticker_upper]
+            return {
+                'environmental_score': company_data.get('E', 50),
+                'social_score': company_data.get('S', 50),
+                'governance_score': company_data.get('G', 50),
+                'overall_esg_score': company_data.get('total', 50),
+                'data_source': 'BRSR/CDP Database',
+                'tier': company_data.get('tier', 'Average'),
+                'is_real_data': True
+            }
+        return None
     
     def _load_sector_proxy_data(self) -> pd.DataFrame:
         """Load sector proxy ESG scores"""
@@ -482,19 +525,28 @@ class ESGScoringEngine:
             # Get ticker using consolidated data_utils (already imported)
             ticker = get_ticker(stock_name=stock_name, isin=isin, symbol=symbol)
             
-            # ENHANCED ESG DATA FETCHING WITH 3-TIER FALLBACK
-            # Priority: API Data → ML Prediction → Sector Proxy
+            # ENHANCED ESG DATA FETCHING WITH 4-TIER FALLBACK
+            # Priority: API Data → Company Database → ML Prediction → Sector Proxy
             
             # TIER 1: Try to fetch from API sources (Yahoo, BRSR, etc.)
             esg_data = self.fetch_esg_data(ticker, stock_name, isin)
             ml_explanation = None
             ml_attempted = False
+            company_data_used = False
             
-            # TIER 2: If no API data, try ML model prediction (with robust fallbacks)
+            # TIER 1.5: If no API data, check company-specific database (BRSR/CDP reports)
+            if esg_data is None and ticker:
+                company_esg = self.get_company_esg(ticker)
+                if company_esg:
+                    esg_data = company_esg
+                    company_data_used = True
+                    print(f"   📗 Tier 1.5: Found in company database ({company_esg.get('tier', 'N/A')} tier)")
+            
+            # TIER 2: If no company data, try ML model prediction (with robust fallbacks)
             if esg_data is None and self.ml_predictor is not None:
                 ml_attempted = True
                 try:
-                    print(f"   🤖 Tier 2: No API ESG data - trying ML prediction...")
+                    print(f"   🤖 Tier 2: No API/company ESG data - trying ML prediction...")
                     ml_result = self.ml_predictor.predict_esg(
                         ticker=ticker, 
                         stock_name=stock_name, 
@@ -531,7 +583,7 @@ class ESGScoringEngine:
                     print(f"   ⚠️ ML prediction failed: {e}")
             
             # TIER 3: Calculate score (with SECTOR PROXY as final fallback)
-            if esg_data is None and ml_attempted:
+            if esg_data is None and (ml_attempted or company_data_used is False):
                 print(f"   📊 Tier 3: Falling back to sector proxy...")
             
             esg_score = self.calculate_esg_score(esg_data, sector, current_value)

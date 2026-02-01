@@ -303,3 +303,365 @@ def get_stock_name_column(df: pd.DataFrame) -> Optional[str]:
                 return col
     
     return None
+
+
+# =============================================================================
+# Ticker Normalization for ESG/Market Data
+# =============================================================================
+
+# Common Indian company names to NSE ticker mappings
+INDIAN_COMPANY_TICKER_MAP = {
+    # Top 50 Indian stocks
+    'RELIANCE': 'RELIANCE.NS',
+    'RELIANCE INDUSTRIES': 'RELIANCE.NS',
+    'TCS': 'TCS.NS',
+    'TATA CONSULTANCY': 'TCS.NS',
+    'TATA CONSULTANCY SERVICES': 'TCS.NS',
+    'HDFC BANK': 'HDFCBANK.NS',
+    'HDFCBANK': 'HDFCBANK.NS',
+    'INFOSYS': 'INFY.NS',
+    'INFY': 'INFY.NS',
+    'ICICI BANK': 'ICICIBANK.NS',
+    'ICICIBANK': 'ICICIBANK.NS',
+    'HINDUSTAN UNILEVER': 'HINDUNILVR.NS',
+    'HUL': 'HINDUNILVR.NS',
+    'HINDUNILVR': 'HINDUNILVR.NS',
+    'ITC': 'ITC.NS',
+    'STATE BANK': 'SBIN.NS',
+    'SBI': 'SBIN.NS',
+    'SBIN': 'SBIN.NS',
+    'BHARTI AIRTEL': 'BHARTIARTL.NS',
+    'AIRTEL': 'BHARTIARTL.NS',
+    'BHARTIARTL': 'BHARTIARTL.NS',
+    'KOTAK MAHINDRA': 'KOTAKBANK.NS',
+    'KOTAKBANK': 'KOTAKBANK.NS',
+    'KOTAK BANK': 'KOTAKBANK.NS',
+    'BAJAJ FINANCE': 'BAJFINANCE.NS',
+    'BAJFINANCE': 'BAJFINANCE.NS',
+    'LARSEN': 'LT.NS',
+    'L&T': 'LT.NS',
+    'LT': 'LT.NS',
+    'ASIAN PAINTS': 'ASIANPAINT.NS',
+    'ASIANPAINT': 'ASIANPAINT.NS',
+    'AXIS BANK': 'AXISBANK.NS',
+    'AXISBANK': 'AXISBANK.NS',
+    'MARUTI': 'MARUTI.NS',
+    'MARUTI SUZUKI': 'MARUTI.NS',
+    'TITAN': 'TITAN.NS',
+    'WIPRO': 'WIPRO.NS',
+    'HCLTECH': 'HCLTECH.NS',
+    'HCL TECHNOLOGIES': 'HCLTECH.NS',
+    'SUNPHARMA': 'SUNPHARMA.NS',
+    'SUN PHARMA': 'SUNPHARMA.NS',
+    'ULTRACEMCO': 'ULTRACEMCO.NS',
+    'ULTRATECH': 'ULTRACEMCO.NS',
+    'ULTRATECH CEMENT': 'ULTRACEMCO.NS',
+    'POWERGRID': 'POWERGRID.NS',
+    'POWER GRID': 'POWERGRID.NS',
+    'NTPC': 'NTPC.NS',
+    'TECHM': 'TECHM.NS',
+    'TECH MAHINDRA': 'TECHM.NS',
+    'ONGC': 'ONGC.NS',
+    'TATAMOTORS': 'TATAMOTORS.NS',
+    'TATA MOTORS': 'TATAMOTORS.NS',
+    'TATASTEEL': 'TATASTEEL.NS',
+    'TATA STEEL': 'TATASTEEL.NS',
+    'JSWSTEEL': 'JSWSTEEL.NS',
+    'JSW STEEL': 'JSWSTEEL.NS',
+    'ADANIENT': 'ADANIENT.NS',
+    'ADANI ENT': 'ADANIENT.NS',
+    'ADANI ENTERPRISES': 'ADANIENT.NS',
+    'ADANIPORTS': 'ADANIPORTS.NS',
+    'ADANI PORTS': 'ADANIPORTS.NS',
+    'BAJAJFINSV': 'BAJAJFINSV.NS',
+    'BAJAJ FINSERV': 'BAJAJFINSV.NS',
+    'DIVISLAB': 'DIVISLAB.NS',
+    "DIVI'S LAB": 'DIVISLAB.NS',
+    'DRREDDY': 'DRREDDY.NS',
+    "DR REDDY'S": 'DRREDDY.NS',
+    'CIPLA': 'CIPLA.NS',
+    'EICHERMOT': 'EICHERMOT.NS',
+    'EICHER MOTORS': 'EICHERMOT.NS',
+    'GRASIM': 'GRASIM.NS',
+    'BRITANNIA': 'BRITANNIA.NS',
+    'NESTLEIND': 'NESTLEIND.NS',
+    'NESTLE': 'NESTLEIND.NS',
+    'HEROMOTOCO': 'HEROMOTOCO.NS',
+    'HERO MOTOCORP': 'HEROMOTOCO.NS',
+    'COALINDIA': 'COALINDIA.NS',
+    'COAL INDIA': 'COALINDIA.NS',
+    'INDUSINDBK': 'INDUSINDBK.NS',
+    'INDUSIND BANK': 'INDUSINDBK.NS',
+    'SHREECEM': 'SHREECEM.NS',
+    'SHREE CEMENT': 'SHREECEM.NS',
+    'HINDALCO': 'HINDALCO.NS',
+    'M&M': 'M&M.NS',
+    'MAHINDRA': 'M&M.NS',
+    'TATACONSUM': 'TATACONSUM.NS',
+    'TATA CONSUMER': 'TATACONSUM.NS',
+    'BPCL': 'BPCL.NS',
+    'IOC': 'IOC.NS',
+    'INDIAN OIL': 'IOC.NS',
+    'SBILIFE': 'SBILIFE.NS',
+    'SBI LIFE': 'SBILIFE.NS',
+    'HDFCLIFE': 'HDFCLIFE.NS',
+    'HDFC LIFE': 'HDFCLIFE.NS',
+    'ICICIGI': 'ICICIGI.NS',
+    'ICICI GENERAL': 'ICICIGI.NS',
+    'VEDL': 'VEDL.NS',
+    'VEDANTA': 'VEDL.NS',
+    'BAJAJ AUTO': 'BAJAJ-AUTO.NS',
+    'BAJAJAUTO': 'BAJAJ-AUTO.NS',
+    'UPL': 'UPL.NS',
+    'APOLLOHOSP': 'APOLLOHOSP.NS',
+    'APOLLO HOSPITALS': 'APOLLOHOSP.NS',
+    
+    # Additional stocks from Zerodha P&L reports
+    'NLC INDIA': 'NLCINDIA.NS',
+    'NLC INDIA LIMITED': 'NLCINDIA.NS',
+    'NLCINDIA': 'NLCINDIA.NS',
+    'NTPC LTD': 'NTPC.NS',
+    'HINDUSTAN PETROLEUM CORP': 'HINDPETRO.NS',
+    'HINDUSTAN PETROLEUM': 'HINDPETRO.NS',
+    'HINDPETRO': 'HINDPETRO.NS',
+    'HPCL': 'HINDPETRO.NS',
+    'OIL AND NATURAL GAS CORP': 'ONGC.NS',
+    'OIL AND NATURAL GAS CORP.': 'ONGC.NS',
+    'BANK OF MAHARASHTRA': 'MAHABANK.NS',
+    'MAHABANK': 'MAHABANK.NS',
+    'CENTRAL DEPO SER (I) LTD': 'CDSL.NS',
+    'CDSL': 'CDSL.NS',
+    'COAL INDIA LTD': 'COALINDIA.NS',
+    'GAIL': 'GAIL.NS',
+    'GAIL (INDIA) LTD': 'GAIL.NS',
+    'GAIL INDIA': 'GAIL.NS',
+    'GRAPHITE INDIA': 'GRAPHITE.NS',
+    'GRAPHITE INDIA LTD': 'GRAPHITE.NS',
+    'GRAPHITE': 'GRAPHITE.NS',
+    'IDFC FIRST BANK': 'IDFCFIRSTB.NS',
+    'IDFC FIRST BANK LIMITED': 'IDFCFIRSTB.NS',
+    'IDFCFIRSTB': 'IDFCFIRSTB.NS',
+    'INDIAN OIL CORP': 'IOC.NS',
+    'INDIAN OIL CORP LTD': 'IOC.NS',
+    'ITC LTD': 'ITC.NS',
+    'JIO FIN SERVICES': 'JIOFIN.NS',
+    'JIO FIN SERVICES LTD': 'JIOFIN.NS',
+    'JIOFIN': 'JIOFIN.NS',
+    'NMDC': 'NMDC.NS',
+    'NMDC LTD': 'NMDC.NS',
+    'NMDC LTD.': 'NMDC.NS',
+    'OIL INDIA': 'OIL.NS',
+    'OIL INDIA LTD': 'OIL.NS',
+    'POWER FIN CORP': 'PFC.NS',
+    'POWER FIN CORP LTD': 'PFC.NS',
+    'POWER FIN CORP LTD.': 'PFC.NS',
+    'PFC': 'PFC.NS',
+    'REC': 'RECLTD.NS',
+    'REC LIMITED': 'RECLTD.NS',
+    'RECLTD': 'RECLTD.NS',
+    'RITES': 'RITES.NS',
+    'RITES LIMITED': 'RITES.NS',
+    'SUZLON': 'SUZLON.NS',
+    'SUZLON ENERGY': 'SUZLON.NS',
+    'SUZLON ENERGY LIMITED': 'SUZLON.NS',
+    'TATA CAPITAL': 'TATACAPITAL.NS',
+    'TATA CAPITAL LIMITED': 'TATACAPITAL.NS',
+    'TATA MOTORS LIMITED': 'TATAMOTORS.NS',
+    'SJVN': 'SJVN.NS',
+    'SJVN LTD': 'SJVN.NS',
+    'NCC': 'NCC.NS',
+    'NCC LIMITED': 'NCC.NS',
+    'IRCON': 'IRCON.NS',
+    'IRCON INTERNATIONAL': 'IRCON.NS',
+    'IRCON INTERNATIONAL LTD': 'IRCON.NS',
+    'BHARAT PETROLEUM': 'BPCL.NS',
+    'BHARAT PETROLEUM CORP': 'BPCL.NS',
+    'BHARAT PETROLEUM CORP LT': 'BPCL.NS',
+    'BHARAT PETROLEUM CORP  LT': 'BPCL.NS',
+    'IRB INFRA': 'IRB.NS',
+    'IRB INFRA DEV': 'IRB.NS',
+    'IRB INFRA DEV LTD': 'IRB.NS',
+    'IRB INFRA DEV LTD.': 'IRB.NS',
+    'IRB': 'IRB.NS',
+    'GUJ STATE FERT': 'GSFC.NS',
+    'GUJ STATE FERT & CHEM': 'GSFC.NS',
+    'GUJ STATE FERT & CHEM LTD': 'GSFC.NS',
+    'GSFC': 'GSFC.NS',
+    'MRPL': 'MRPL.NS',
+    'CHOICE INTERNATIONAL': 'CHOICE.NS',
+    'CHOICE INTERNATIONAL LTD': 'CHOICE.NS',
+    'CHOICE': 'CHOICE.NS',
+    # Additional stocks from user portfolio logs
+    'VEDANTA': 'VEDL.NS',
+    'VEDANTA LIMITED': 'VEDL.NS',
+    'VEDL': 'VEDL.NS',
+    'SESGOA': 'VEDL.NS',  # Old name for Vedanta
+    'TATA STEEL': 'TATASTEEL.NS',
+    'TATA STEEL LTD': 'TATASTEEL.NS',
+    'TATA STEEL  LTD': 'TATASTEEL.NS',
+    'TATIRO': 'TATASTEEL.NS',  # NSE symbol variant
+    'TATASTEEL': 'TATASTEEL.NS',
+    'ONGC': 'ONGC.NS',
+    'ONGC LTD': 'ONGC.NS',
+    'OILNAT': 'ONGC.NS',  # NSE symbol variant
+    'OIL AND NATURAL GAS': 'ONGC.NS',
+    'OIL AND NATURAL GAS CORPORATION': 'ONGC.NS',
+    'NHPC': 'NHPC.NS',
+    'NHPC LIMITED': 'NHPC.NS',
+    'NHPC LTD': 'NHPC.NS',
+    'NSDL': 'NSDL.NS',
+    'NATIONAL SECURITIES DEPOSITORY': 'NSDL.NS',
+    'NATIONAL SECURITIES DEPOSITORY LIMITED': 'NSDL.NS',
+    'BAJAJ HOUSING': 'BAJAJHFL.NS',
+    'BAJAJ HOUSING FINANCE': 'BAJAJHFL.NS',
+    'BAJAJ HOUSING FINANCE LIMITED': 'BAJAJHFL.NS',
+    'BAJAJHFL': 'BAJAJHFL.NS',
+    'AEROFLEX': 'AEROFLEX.NS',
+    'AEROFLEX ENTERPRISES': 'AEROFLEX.NS',
+    'AEROFLEX ENTERPRISES LIMITED': 'AEROFLEX.NS',
+    'EMCURE': 'EMCURE.NS',
+    'EMCURE PHARMACEUTICALS': 'EMCURE.NS',
+    'EMCURE PHARMACEUTICALS LIMITED': 'EMCURE.NS',
+    'GANDHAR OIL': 'GANDHAR.NS',
+    'GANDHAR OIL REFINERY': 'GANDHAR.NS',
+    'GANDHAR OIL REFINERY (INDIA) LIMITED': 'GANDHAR.NS',
+    'HATHWAY': 'HATHWAY.NS',
+    'HATHWAY CABLE': 'HATHWAY.NS',
+    'HATHWAY CABLE & DATACOM': 'HATHWAY.NS',
+    'HATHWAY CABLE & DATACOM LIMITED': 'HATHWAY.NS',
+    'HATHCABLE': 'HATHWAY.NS',  # NSE symbol variant
+    'INDIAN OIL': 'IOC.NS',
+    'INDIAN OIL CORPORATION': 'IOC.NS',
+    'INDIAN OIL CORPORATION LTD': 'IOC.NS',
+    'INDOIL': 'IOC.NS',  # NSE symbol variant
+    'SHRIRAM PROPERTIES': 'SHRIRAMPP.NS',
+    'SHRIRAM PROPERTIES LIMITED': 'SHRIRAMPP.NS',
+    'SHRIRAMPP': 'SHRIRAMPP.NS',
+    'RELIANCE': 'RELIANCE.NS',
+    'RELIANCE INDUSTRIES': 'RELIANCE.NS',
+    'RELIANCE INDUSTRIES LTD': 'RELIANCE.NS',
+    'RELIND': 'RELIANCE.NS',  # NSE symbol variant
+    'CDSL': 'CDSL.NS',
+    'CENTRAL DEPOSITORY': 'CDSL.NS',
+    'CENTRAL DEPOSITORY SERVICES': 'CDSL.NS',
+    'CENTRAL DEPOSITORY SERVICES (INDIA) LTD': 'CDSL.NS',
+    'SATIN': 'SATIN.NS',
+    'SATIN CREDITCARE': 'SATIN.NS',
+    'SATIN CREDITCARE NETWORK': 'SATIN.NS',
+    'SATINV': 'SATIN.NS',
+    'SATINVEQ': 'SATIN.NS',
+    'BPCLTD': 'BPCL.NS',  # NSE symbol variant for BPCL
+    'TATIRO': 'TATASTEEL.NS',  # NSE symbol variant
+    'SHRIRAMPP': 'SHRIRAMPP.NS',
+    'EMCUREEQ': 'EMCURE.NS',
+    'GANDHAREQ': 'GANDHAR.NS',
+}
+
+
+def normalize_ticker(stock_name: str) -> str:
+    """
+    Normalize a stock name to a yfinance-compatible ticker.
+    
+    Handles:
+    1. Already-valid tickers (e.g., RELIANCE.NS) - returns as-is
+    2. Common Indian company names -> NSE ticker mapping
+    3. Symbols with EQ/BE/BZ suffix (NSE series codes) - strips suffix
+    4. Plain symbols without suffix -> adds .NS suffix
+    
+    Parameters
+    ----------
+    stock_name : str
+        Stock name or ticker from portfolio CSV
+        
+    Returns
+    -------
+    str
+        Normalized ticker with exchange suffix (e.g., RELIANCE.NS)
+    """
+    if not stock_name or not isinstance(stock_name, str):
+        return stock_name
+    
+    stock_name = stock_name.strip()
+    
+    # Already has exchange suffix - check if it has EQ appended before suffix
+    if any(stock_name.upper().endswith(suffix) for suffix in ['.NS', '.BO', '.NYSE', '.NASDAQ']):
+        # Check for EQ suffix before .NS (e.g., RELIANCEEQ.NS -> RELIANCE.NS)
+        upper = stock_name.upper()
+        for series_suffix in ['EQ.NS', 'BE.NS', 'BZ.NS', 'EQ.BO', 'BE.BO', 'BZ.BO']:
+            if upper.endswith(series_suffix):
+                base = stock_name[:-len(series_suffix)].upper()
+                exchange = series_suffix[-3:]  # .NS or .BO
+                
+                # Check if the base symbol is in our mapping table
+                if base in INDIAN_COMPANY_TICKER_MAP:
+                    return INDIAN_COMPANY_TICKER_MAP[base]
+                
+                return base + exchange
+        return stock_name.upper() if stock_name.endswith(('.NS', '.BO')) else stock_name
+    
+    # Try exact match in mapping (case-insensitive)
+    upper_name = stock_name.upper()
+    if upper_name in INDIAN_COMPANY_TICKER_MAP:
+        return INDIAN_COMPANY_TICKER_MAP[upper_name]
+    
+    # Try partial match for company names
+    for key, ticker in INDIAN_COMPANY_TICKER_MAP.items():
+        if key in upper_name or upper_name in key:
+            return ticker
+    
+    # Strip NSE series suffixes (EQ, BE, BZ, etc.) from raw symbols
+    clean_name = upper_name
+    for series in ['EQ', 'BE', 'BZ', 'SM', 'MS', 'GS', 'TS']:
+        if clean_name.endswith(series) and len(clean_name) > len(series):
+            clean_name = clean_name[:-len(series)]
+            break
+    
+    # Default: assume NSE ticker and add .NS suffix
+    # Clean the name (remove special chars except hyphen)
+    clean_name = ''.join(c for c in clean_name if c.isalnum() or c == '-')
+    if clean_name:
+        return f"{clean_name}.NS"
+    
+    return stock_name
+
+
+def normalize_portfolio_tickers(
+    df: pd.DataFrame, 
+    stock_column: Optional[str] = None,
+    ticker_column: Optional[str] = None
+) -> pd.DataFrame:
+    """
+    Add normalized ticker column to portfolio DataFrame.
+    
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Portfolio DataFrame
+    stock_column : str, optional
+        Column containing stock names. Auto-detected if not provided.
+    ticker_column : str, optional
+        Name for new ticker column. Defaults to 'Ticker'.
+        
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with added/updated ticker column
+    """
+    df = df.copy()
+    
+    # Find stock name column if not provided
+    if not stock_column:
+        stock_column = get_stock_name_column(df)
+    
+    if not stock_column or stock_column not in df.columns:
+        return df
+    
+    # Set default ticker column name
+    if not ticker_column:
+        ticker_column = 'Ticker'
+    
+    # Create normalized tickers
+    df[ticker_column] = df[stock_column].apply(normalize_ticker)
+    
+    return df
+

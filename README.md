@@ -157,6 +157,61 @@ xfin esg
 streamlit run unified_dashboard.py
 ```
 
+---
+
+## 🐳 Docker Deployment
+
+Run XFIN in containers for production deployment:
+
+```bash
+# Clone and set up
+git clone https://github.com/RishaBhangale/XFIN.git
+cd XFIN
+cp .env.example .env
+# Edit .env with your API keys
+
+# Run Streamlit Dashboard
+docker-compose up xfin-app
+
+# Run FastAPI (REST API)
+docker-compose up xfin-api
+
+# Run both services
+docker-compose up
+```
+
+**Available Services:**
+| Service | Port | Description |
+|---------|------|-------------|
+| `xfin-app` | 8501 | Streamlit Dashboard |
+| `xfin-api` | 8000 | FastAPI REST API |
+| `xfin-cli` | - | CLI for batch processing |
+
+---
+
+## 🔌 REST API
+
+XFIN provides a FastAPI-based REST API for programmatic access:
+
+```bash
+# Start API server locally
+uvicorn api.main:app --reload --port 8000
+
+# API Documentation
+open http://localhost:8000/docs
+```
+
+**API Endpoints:**
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/health` | GET | Health check |
+| `/api/v1/scenarios` | GET | List stress scenarios |
+| `/api/v1/stress-test` | POST | Run stress test |
+| `/api/v1/compare-scenarios` | POST | Compare scenarios |
+| `/api/v1/esg/portfolio` | POST | Portfolio ESG scores |
+| `/api/v1/esg/security` | POST | Single security ESG |
+| `/api/v1/upload/portfolio` | POST | Upload CSV file |
+
 ## 📊 Complete Analysis Example
 
 Combine all three modules for comprehensive portfolio analysis:
@@ -306,6 +361,23 @@ docs/
 ├── README.md                # Main documentation
 ├── API_GUIDE.md            # Complete API reference
 └── QUICK_START.md          # Getting started
+
+api/                          # FastAPI REST API
+├── __init__.py
+└── main.py                  # API endpoints
+
+tests/                        # Test suite (87 tests)
+├── test_stress_testing.py
+├── test_esg.py
+├── test_parsers.py
+├── test_cli.py
+└── test_utils.py
+
+.github/workflows/            # CI/CD
+└── ci.yml                   # GitHub Actions
+
+Dockerfile                    # Container build
+docker-compose.yml           # Multi-service setup
 ```
 
 ## 🎨 Features Comparison
@@ -400,13 +472,22 @@ You are free to:
 - [ ] Multi-currency support
 - [ ] Derivatives stress testing
 - [ ] Carbon footprint analysis
-- [ ] API endpoints (REST)
+- [x] API endpoints (REST) ✅
 
 ### Version 1.0.0 (Q3 2026)
 - [ ] Enterprise features
 - [ ] Advanced compliance reporting
 - [ ] Real-time dashboards
 - [ ] Mobile app
+
+## 🔄 CI/CD
+
+XFIN uses GitHub Actions for continuous integration:
+
+- ✅ Automated testing on Python 3.9, 3.10, 3.11
+- ✅ Code linting (Black, isort, flake8)
+- ✅ Docker image builds on main branch
+- ✅ Coverage reporting
 
 ## 📈 Version History
 
